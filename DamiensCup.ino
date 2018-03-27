@@ -1,28 +1,237 @@
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
-//#include "Adafruit_TMP006.h"
+#include "Adafruit_TMP006.h"
 #include "pitches.h"
+#define NOTE_00 0
 
+// I2C Sensors
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
-//Adafruit_TMP006 tmp;
+Adafruit_TMP006 tmp;
 
-#define R 6
-#define G 5
-#define B 3
+// DEBUG
+#define _DEBUG 0
+
+// ATMEGA pins
+#define R       6
+#define G       5
+#define B       3
 #define buzzer 12
 
-float cupResistance = 9.00;
-int   initMelody[] = { NOTE_C6, NOTE_D6, NOTE_E6 };
+// Initial values
+int initialX, initialY, initialZ, temperature, timer = 0;
 
-/*
+// Temperature and Acceleration tolerances
+int tolerance     = 200;
+int tempTolerance = 48;
+
+// States
+bool moved   = false;
+int state    = 0;
+int stateMax = 5;
+
+// Timers
+int sleep           = 2 * 60;
+int waitForMovement = 30;
+int waitForTilt     = 60;
+int sleepMove       = 4;
+
 int readTemp()
 {
 
-  return tmp.readObjTempC() + cupResistance;
+  return tmp.readObjTempC() + 9.00;
 
 }
-*/
+
+void initMMA()
+{
+
+  mma.read();
+  
+  initialX = mma.x;
+  initialY = mma.y;
+  initialZ = mma.z;
+  #if _DEBUG
+    Serial.print("Init X : "); Serial.println(initialX);
+    Serial.print("Init Y : "); Serial.println(initialY);
+    Serial.print("Init Z : "); Serial.println(initialZ);
+    Serial.println();
+  #endif
+
+}
+
+void wait(int seconds = 1)
+{
+
+  delay(seconds * 1000);
+  
+}
+
+bool atTimer(int t)
+{
+
+  return (timer > 0 && timer % t == 0);
+
+}
+
+void light(int color)
+{
+
+  switch (color) {
+    case 0:
+      digitalWrite(R, LOW);
+      digitalWrite(G, LOW);
+      digitalWrite(B, LOW);
+      break;   
+    case 1:
+      digitalWrite(R, HIGH);
+      digitalWrite(G, LOW);
+      digitalWrite(B, LOW);
+      break;
+    case 2:
+      digitalWrite(R, LOW);
+      digitalWrite(G, HIGH);
+      digitalWrite(B, LOW);
+      break;
+    case 3:
+      digitalWrite(R, LOW);
+      digitalWrite(G, LOW);
+      digitalWrite(B, HIGH);
+      break;
+    case 4:
+      digitalWrite(R, HIGH);
+      digitalWrite(G, HIGH);
+      digitalWrite(B, HIGH);
+      break;
+  }
+  
+}
+
+void buzz()
+{
+
+  int melody[][2] = {
+    {NOTE_E3, 8},
+    {NOTE_E3, 8},
+    {NOTE_00, 8},
+    {NOTE_E3, 8},
+    {NOTE_00, 8},
+    {NOTE_C3, 8},
+    {NOTE_E3, 8},
+    {NOTE_00, 8},
+    {NOTE_G3, 8},
+    {NOTE_00, 4},
+    {NOTE_00, 8},
+    {NOTE_G2, 8},
+    {NOTE_00, 8},
+    {NOTE_00, 4}
+  };
+
+  for (int note = 0; note < sizeof(melody)/4 - 1 ; note++) {
+    int duration = 1000/melody[note][1];
+    tone(buzzer, melody[note][0], duration);
+    delay(duration * 1.30);
+    noTone(8);
+  }  
+
+}
+
+void setState(int s)
+{
+
+  #if _DEBUG
+    Serial.print("Setting State at: "); Serial.println(s);
+  #endif
+
+  state = s;
+  light(s);
+  
+  if (state == stateMax) {
+    setState(0);
+    reset();
+    #if _DEBUG
+      Serial.println(); Serial.println("... sleep ..."); Serial.println();
+    #endif    
+    wait(sleep);
+  }
+  
+}
+
+bool hasMoved()
+{
+
+  boolean moved = false;
+  
+  mma.read();
+  int x     = mma.x;
+  int y     = mma.y;
+  int z     = mma.z;
+  int diffX = abs(x - initialX); 
+  int diffY = abs(y - initialY); 
+  int diffZ = abs(z - initialZ); 
+  if (diffX > tolerance) {
+    moved = true;
+  }
+  if (diffY > tolerance) {
+    moved = true;
+  }
+  if (diffZ > tolerance) {
+    moved = true;
+  }
+
+  if (moved) {
+    #if _DEBUG
+      Serial.println();
+      Serial.print("X : "); Serial.println(diffX);
+      Serial.print("Y : "); Serial.println(diffY);
+      Serial.print("Z : "); Serial.println(diffZ);
+      Serial.println();
+    #endif
+    initMMA();
+  }
+    
+  return moved;
+  
+}
+
+void checkMovement()
+{
+
+  timer = 0;
+  moved = false;
+
+  int timing = waitForMovement;
+  if (state > 1) {
+    timing = waitForTilt;
+  }
+  
+  initMMA();
+  while(!atTimer(timing) && !moved) {
+    moved = hasMoved();
+    #if _DEBUG
+      Serial.print(".");
+    #endif
+    timer++;
+    wait();
+  }
+
+  if (moved) {
+    #if _DEBUG
+      Serial.println();
+      Serial.println(); Serial.println(">>> has moved!"); Serial.println();
+    #endif
+  } else {
+    buzz();
+    #if _DEBUG
+      Serial.println();
+      Serial.println(); Serial.println("/!\\ FORGOT COFFEE /!\\"); Serial.println();
+    #endif
+  }
+
+  setState(state + 1);
+  wait(sleepMove);
+    
+}
 
 void setup(void)
 { 
@@ -32,160 +241,55 @@ void setup(void)
   pinMode(B, OUTPUT);
   pinMode(buzzer, OUTPUT);
 
-  //Serial.begin(9600);
+  #if _DEBUG
+    Serial.begin(9600);
+  #endif
+
+  tmp.begin();
+  temperature = readTemp();
+  #if _DEBUG
+    Serial.print("Initial Temperature: "); Serial.println(temperature);
+  #endif
+  
   mma.begin();
-  //tmp.begin();
-
   mma.setRange(MMA8451_RANGE_2_G);
+  initMMA();
 
-  mma.read();
-  for (int i = 0; i < 3; i++) {
-    tone(buzzer, initMelody[i], 100);
-    delay(100);
-  }
-
+  #if !_DEBUG
+    buzz();
+  #endif
 }
 
-/*
 void reset()
 {
 
-  //Serial.println("RESET!");
-  digitalWrite(R, LOW);
-  digitalWrite(G, LOW);
-  digitalWrite(B, LOW);
-  moved     = false;    
-  coffee    = false;
-  tilt      = 0;
-  cold      = 0;
-  previousY = currentY;
-  seconds   = 0;
-  buzzed    = false;
-
+  timer = 0;
+  temperature = readTemp();
+  moved = false;
+  
 }
-*/
-
-int   seconds   = 0;
-
-bool  onWait = false;
-
-int   waitReset = 300;
-
 
 void loop()
 {
 
-  if (onWait) {
-    if (seconds == waitReset) {
-      onWait = false; 
-      seconds = 0;
-    }
-  } else {
-    mma.read();
-    int x = mma.x;
-    int y = mma.y;
-    if (x > 2048) {
-      digitalWrite(R, HIGH);
-      tone(buzzer, NOTE_A4, 100);
-      delay(100);
-      digitalWrite(R, LOW);
-    }
-    if (y > 2048) {
-      digitalWrite(G, HIGH);
-      tone(buzzer, NOTE_B4, 100);
-      delay(100);
-      digitalWrite(G, LOW);
-    }
+  #if _DEBUG
+    Serial.println("Ready...");
+  #endif
+  
+  while(temperature < tempTolerance) {
+    temperature = readTemp();
+    wait();
   }
 
-}
-
-/*
-
-
-bool  coffee    = false;
-bool  moved     = false; 
-bool  buzzed    = false;
-int   tilt      = 0;
-int   cold      = 0;
-
-int   waitMove  = 30;
-int   waitTilt  = 60;
-
-void aloop() {
-
-  if (!onWait) {
-    int temp = readTemp();
-    // If temperature is higher than 40 degrees, there's hot liquid!
-    if (temp >= 45) {
-      if (!coffee) {
-        digitalWrite(R, HIGH);
-        coffee = true;
-      }      
-      
-      mma.read();
-      currentY = mma.y;
-      if (moved && tilt <= 4) {
-        uint8_t orientation = mma.getOrientation();
+  setState(1);
   
-        if (previousOrientation != orientation) {
-          //Serial.println("TILT!");
-          tilt++;
-          previousOrientation = orientation;
-          digitalWrite(B, HIGH);
-        }
-        
-        if (seconds == waitTilt && tilt < 4) {
-          tone(buzzer, NOTE_A4, 1000);
-          delay(1000);
-          tilt++;
-          seconds = 0;
-        }
-      } else if (moved && tilt >= 4) {
-        reset();
-        onWait = true;
-      } else {
-        if (!buzzed && currentY - previousY >= 350) {
-          if (!moved) {
-            seconds = 0;
-            //Serial.print("It's moving!"); Serial.println();
-            moved = true;
-            digitalWrite(G, HIGH);
-          }
-        } else {
-          if (!buzzed && seconds == waitMove) {
-            buzzed = true;
-            tone(buzzer, NOTE_D4, 1000);
-            delay(1000);
-            seconds = 0;
-            delay(1000);
-            moved = true;
-          }
-        }
-        previousY = currentY;    
-      }
-    } else {
-      if (coffee) {
-        // If it's cold for 3 seconds, we can assume it's a real reading...
-        if (cold == 3 * 10) {
-          reset();
-        } else {
-          // Increment until 3 readings in a row are cold.
-          cold++;
-        }
-      }
-    }
-  } else {
-    if (seconds == waitReset) {
-      //Serial.println("WAIT IS OVER...");
-      onWait  = false;
-      reset();
-    }
+  #if _DEBUG
+    Serial.print("Temperature is at: "); Serial.println(temperature);
+  #endif
+
+  while (state > 0 && state <= stateMax) {
+    checkMovement();
+    wait();
   }
-  
-  // Every 100 milliseconds...
-  seconds++;
-  delay(100);
-  
+    
 }
-*/
