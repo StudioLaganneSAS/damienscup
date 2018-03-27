@@ -233,7 +233,7 @@ void checkMovement()
     
 }
 
-void setup(void)
+void setup()
 { 
  
   pinMode(R, OUTPUT);
@@ -258,6 +258,7 @@ void setup(void)
   #if !_DEBUG
     buzz();
   #endif
+  
 }
 
 void reset()
