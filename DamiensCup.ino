@@ -217,6 +217,12 @@ void checkMovement()
   }
 
   if (moved) {
+    setState(state + 1);
+    int sleeping = sleepInitialMove;
+    if (state > 1) {
+      sleeping = sleepMove; 
+    }
+    wait(sleeping);
     #if _DEBUG
       Serial.println();
       Serial.println(); Serial.println(">>> has moved!"); Serial.println();
@@ -227,15 +233,8 @@ void checkMovement()
       Serial.println();
       Serial.println(); Serial.println("/!\\ FORGOT COFFEE /!\\"); Serial.println();
     #endif
+    wait();
   }
-
-  setState(state + 1);
-
-  int sleeping = sleepInitialMove;
-  if (state > 1) {
-    sleeping = sleepMove; 
-  }
-  wait(sleeping);
 
 }
 
