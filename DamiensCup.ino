@@ -31,10 +31,11 @@ int state    = 0;
 int stateMax = 5;
 
 // Timers
-int sleep           = 2 * 60;
-int waitForMovement = 30;
-int waitForTilt     = 60;
-int sleepMove       = 4;
+int sleep            = 2 * 60;
+int waitForMovement  = 30;
+int waitForTilt      = 60;
+int sleepInitialMove = 20;
+int sleepMove        = 5;
 
 int readTemp()
 {
@@ -229,8 +230,13 @@ void checkMovement()
   }
 
   setState(state + 1);
-  wait(sleepMove);
-    
+
+  int sleeping = sleepInitialMove;
+  if (state > 1) {
+    sleeping = sleepMove; 
+  }
+  wait(sleeping);
+
 }
 
 void setup()
