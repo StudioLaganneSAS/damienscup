@@ -34,8 +34,8 @@ int stateMax = 5;
 int sleep            = 2 * 60;
 int waitForMovement  = 30;
 int waitForTilt      = 60;
-int sleepInitialMove = 20;
-int sleepMove        = 5;
+int sleepInitialMove = 30;
+int sleepMove        = 10;
 
 int readTemp()
 {
@@ -241,6 +241,8 @@ void checkMovement()
 
 void setup()
 { 
+
+  wait();
  
   pinMode(R, OUTPUT);
   pinMode(G, OUTPUT);
