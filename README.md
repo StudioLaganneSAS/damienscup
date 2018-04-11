@@ -28,7 +28,17 @@ The device is placed right below the coffee cup.
 - Until the cup has been tilted 5 times, it'll buzz and light up the LED every 60 seconds.
 - After a full cycle of coffee > movement > 5 x tilts, the devices goes in sleep mode for 5 minutes not detecting anything.
 
+## Breadboard
+![Damien's Coffee Cup Breadboard](http://drive.psi.sh/StudioLaganne/damienscup/breadboard.png)
+
+## Schematics
+![Damien's Coffee Cup Schematics](http://drive.psi.sh/StudioLaganne/damienscup/schematics.png)
+
 ## PCB
+
+![Damien's Coffee Cup PCB Top Layer](http://drive.psi.sh/StudioLaganne/damienscup/pcb_top.png)
+![Damien's Coffee Cup PCB Bottom Layer](http://drive.psi.sh/StudioLaganne/damienscup/pcb_bottom.png)
+
 I replaced the Arduino UNO by a custom-made PCB that just adds the parts for a standalone Arduino ATMEGA328, it just connects the pins for the RGB LED, the passive buzzer and series the SCL and SDA for both I2C sensors.
 
 The project is powered by a [Lithium Ion Polymer Battery - 3.7v 500mAh](https://www.adafruit.com/product/1578) and charged through a [QI Wireless Receiver](https://www.adafruit.com/product/1901) via [Adafruit's Mini Lipo charger](https://www.adafruit.com/product/1905).
