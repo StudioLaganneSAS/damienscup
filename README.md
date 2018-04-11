@@ -6,6 +6,8 @@ My brother always forgets its coffee. Either directly on the coffee machine afte
 
 I decided I would make him a small arduino device below the cup that would detect those slacking behavior!
 
+*Note: This is my **first ever** Arduino's Project :)*
+
 ## Components
 - [Arduino Uno Rev3](https://store.arduino.cc/arduino-uno-rev3)
 - [Adafruit's TMP006 - Contact-less Infrared Thermopile Sensor](https://www.adafruit.com/product/1296)
