@@ -12,6 +12,9 @@ I decided I would make him a small arduino device below the cup that would detec
 - [Adafruit's MMA8451 - Triple-Axis Accelerometer](https://www.adafruit.com/product/2019)
 - RGB LED
 - Passive Buzzer
+- [Adafruit's Mini Lipo charger](https://www.adafruit.com/product/1905)
+- [Lithium Ion Polymer Battery - 3.7v 500mAh](https://www.adafruit.com/product/1578)
+- [QI Wireless Receiver](https://www.adafruit.com/product/1901)
 
 ## How does it works?
 The device is placed right below the coffee cup.
@@ -22,7 +25,8 @@ The device is placed right below the coffee cup.
 - If the cup has not been tilted since 60 seconds, it'll buzz and light up the LED.
 - Until the cup has been tilted 5 times, it'll buzz and light up the LED every 60 seconds.
 - After a full cycle of coffee > movement > 5 x tilts, the devices goes in sleep mode for 5 minutes not detecting anything.
-*REPEAT*
 
 ## PCB
 I replaced the Arduino UNO by a custom-made PCB that just adds the parts for a standalone Arduino ATMEGA328, it just connects the pins for the RGB LED, the passive buzzer and series the SCL and SDA for both I2C sensors.
+
+The project is powered by a [Lithium Ion Polymer Battery - 3.7v 500mAh](https://www.adafruit.com/product/1578) and charged through a [QI Wireless Receiver](https://www.adafruit.com/product/1901) via [Adafruit's Mini Lipo charger](https://www.adafruit.com/product/1905).
