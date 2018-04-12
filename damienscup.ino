@@ -1,7 +1,9 @@
-// Studio Laganne 2018
 // Damien's Coffee Cup
 //
 // By John <psish> Chavarria
+// Copyright (c) 2018 Studio Laganne, SAS http://www.studiolaganne.com
+// MIT License
+//
 //
 
 
@@ -12,12 +14,12 @@
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
-#include "Adafruit_TMP006.h"
-#include "pitches.h"
+#include <Adafruit_TMP006.h>
+#include <pitches.h>
 
 
 //
-// Variables
+// Defines
 //
 
 
@@ -25,27 +27,26 @@
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 Adafruit_TMP006 tmp;
 
-// DEBUG
-#define _DEBUG 0
 
-// ATMEGA pins
+// ATMEGA328 pins
 #define R       6
 #define G       5
 #define B       3
 #define buzzer 12
 
-// Initial values
+
+// Initial X:Y values
 int initialX, initialY;
 
 // Temperature, Acceleration and Angles tolerances
-int   moveTolerance  = 200; // Threshold for movement detection.
+int   moveTolerance  = 230; // Threshold for movement detection.
 int   tempTolerance  = 48;  // It's considered coffee when it's 48 degrees.
 float angleTolerance = 32;  // 32 degrees angle is a tilt.
 
-// Timer
-int seconds      = 1; // tic-toc, on the clock $$$
-int movements    = 0; // Number of movements detected so far
-int tilts        = 0; // Number of tilts detected so far
+// Timers
+int seconds   = 1; // tic-toc, on the clock $$$
+int movements = 0; // Number of movements detected so far
+int tilts     = 0; // Number of tilts detected so far
 
 // States
 bool led     = false; // The LED is ON?
@@ -55,9 +56,9 @@ bool tilting = false; // Are we stable, sir?! ARE WE TILTING?!
 bool onBreak = false; // Don't do anything, we need a kit-kat
 
 // Timers before buzzing
-int timerMovement = 45;
-int timerTilting  = 60;
-int tiltsAmount   = 5;
+int timerMovement = 45; // We want to wait 45 seconds after coffee has been poured in and no movement has been detected
+int timerTilting  = 60; // We want to wait 60 seconds in-between tilts
+int tiltsAmount   = 5;  // Task fulfilment is done after 5 tilts has been made 
 
 // Break time
 int breakTime  = 5*60; // kit-kat eating contest time (how long we pause before next work...)
@@ -107,6 +108,7 @@ void light(int color) {
   }
 }
 
+
 // Blinks the LED really fast
 void blink(int color, bool fast = false) {
 
@@ -116,25 +118,27 @@ void blink(int color, bool fast = false) {
     light(led ? color : 0);
     delay(50);
   }
+
   light(0);
 }
 
-// Buzzes the Buzzer Mr. Buzzed
-void buzz(bool shrt = false) {
 
-  for (int i = 0; i < (shrt ? 5 : 40) ; i++) {
+// Buzzes the Buzzer Mr. Buzzed
+void buzz(bool fast = false) {
+
+  for (int i = 0; i < (fast ? 5 : 40) ; i++) {
 
     led = !led;
     digitalWrite(R, led);
 
     if (i == 0 || i == 24) {
       
-      tone(buzzer, (shrt ? NOTE_A5 : NOTE_G3), 256);
+      tone(buzzer, (fast ? NOTE_A5 : NOTE_G3), 256);
     }
 
     if (i == 11 || i == 35) {
 
-      tone(buzzer, (shrt ? NOTE_A5 : NOTE_G3), 128);
+      tone(buzzer, (fast ? NOTE_A5 : NOTE_G3), 128);
     }
     
     delay(50);
@@ -144,23 +148,16 @@ void buzz(bool shrt = false) {
   noTone(0);
 }
 
+
 // Inits the Accelerometer with values
-void initMMA(bool pr = true) {
+void initMMA() {
 
   mma.read();
   
   initialX = mma.x;
   initialY = mma.y;
-  
-  if (pr) {
-   
-    #if _DEBUG
-      Serial.print("Init X : "); Serial.println(initialX);
-      Serial.print("Init Y : "); Serial.println(initialY);
-      Serial.println();
-    #endif
-  }
 }
+
 
 // Returns an angle from acceleration values
 float angle(float acceleration) {
@@ -185,10 +182,101 @@ void reset() {
   coffee     = false;
   moved      = false;
   tilting    = false;
-
 }
 
-// Arduino Setup
+
+// Returns an acceleration event from the MMA readings
+sensors_vec_t getAcceleration() {
+
+  sensors_event_t event; 
+  mma.getEvent(&event);
+
+  return event.acceleration;
+}
+
+
+// Check if we're reached the max fulfilment of our task (5 tilts)
+void checkFulfilment() {
+
+  // If we tilted enough, reset and wait
+  if (tilts >= tiltsAmount) {
+
+    onBreak = true;
+    reset();
+  }
+}
+
+
+// Check if we're on a break, check if it's time to get back to work...
+void checkBreak() {
+
+  if (onBreak && seconds % breakTime == 0) {
+
+     onBreak = false;
+     seconds = 1;
+  }
+}
+
+
+// Check if the contents of the cup is hot enough...
+bool isItHot() {
+
+  int temp = readTemp();
+  return (temp >= tempTolerance);
+}
+
+
+// Check if the cup is moving...
+bool isItMoving() {
+
+  mma.read();
+
+  int diffX = abs(mma.x - initialX); 
+  int diffY = abs(mma.y - initialY); 
+
+  // re-init
+  initMMA();
+
+  return ((diffX >= moveTolerance) || (diffY >= moveTolerance));
+}
+
+
+// Check if the cup is tilting...
+bool isItTilting() {
+
+  sensors_vec_t acceleration = getAcceleration();
+
+  float angleX = angle(acceleration.x);
+  float angleY = angle(acceleration.y);
+
+  return ((angleX >= angleTolerance) || (angleY >= angleTolerance));
+}
+
+
+// Check if it's flat on the table...
+bool isItFlat() {
+  
+  sensors_vec_t acceleration = getAcceleration();
+
+  float angleX = angle(acceleration.x);
+  float angleY = angle(acceleration.y);
+
+  // Reset tilting if we're flat on the table again
+  if (tilting && (angleX < 5.0 && angleY < 5.0)) {
+    
+    tilting = false;
+  }
+}
+
+
+
+
+// *************************** //
+//                             //
+// Setup                       //
+//                             //
+// *************************** //
+
 void setup() {
 
   // Arduino pins
@@ -197,74 +285,48 @@ void setup() {
   pinMode(B, OUTPUT);
   pinMode(buzzer, OUTPUT);
 
-  // Serial Monitor in debug
-  #if _DEBUG
-    Serial.begin(9600);
-  #endif
-
   // TMP sensor init
   tmp.begin();
 
   // MMA Sensor init
   mma.begin();
   mma.setRange(MMA8451_RANGE_2_G);
-  initMMA(true);
+  initMMA();
 
   // We're fucking ready
   buzz(true);
 }
 
-// Main
+
+
+
+// *************************** //
+//                             //
+// Main Loop                   //
+//                             //
+// *************************** //
+
 void loop() {
 
-  // If we're on a break, check if it's time to get back to work...
-  if (onBreak && seconds % breakTime == 0) {
+  // Are we on break? Should we go back to work?
+  checkBreak();
 
-     onBreak = false;
-     seconds = 1;
-  }
 
   // Temperature Check
-  int temp = readTemp();
-  bool isHot = (temp >= tempTolerance);
-
- // Movement Check
-  mma.read();
-
-  int x = mma.x;
-  int y = mma.y;
-  int z = mma.z;
-  
-  int diffX = abs(x - initialX); 
-  int diffY = abs(y - initialY); 
-
-  bool isMoving = ((diffX >= moveTolerance) || (diffY >= moveTolerance));
-  
+  bool isHot = isItHot();
+  // Movement Check
+  bool isMoving = isItMoving();
   // Inclination Check
-  sensors_event_t event; 
-  mma.getEvent(&event);
+  bool isTilting = isItTilting();
 
-  float angleX = angle(event.acceleration.x);
-  float angleY = angle(event.acceleration.y);
 
-  bool isTilting = ((angleX >= angleTolerance) || (angleY >= angleTolerance));
-  bool isFlat    = ((angleX < angleTolerance)  && (angleY < angleTolerance ));
-  
-  #if _DEBUG
-    Serial.println();
-    Serial.print("X : "); Serial.print(diffX); Serial.print(" / "); Serial.println(angleX);
-    Serial.print("Y : "); Serial.print(diffY); Serial.print(" / "); Serial.println(angleX);
-    Serial.println();
-  #endif
-    
-  initMMA();
-
-  // If something's hot, we blink RED once, we record we got coffee and in and save the time we detected it
+  // If something's hot, we blink RED once, we record we got coffee in.
   if (!onBreak && isHot) {
 
     if (!coffee) {
 
       coffee = true;
+      seconds = 0;
       blink(1);
     }
   }
@@ -274,14 +336,12 @@ void loop() {
 
     movements++;
     moved = true;
+    seconds = 0;
     blink(2, true);
   }
 
-  // Reset tilting if we're flat on the table again
-  if (tilting && isFlat) {
-    
-    tilting = false;
-  }
+  // Check if it's flat
+  isItFlat();
 
   // We got beverage in, we're tilting o/ 
   if (coffee && moved && isTilting) {
@@ -290,9 +350,13 @@ void loop() {
 
       tilting = true;
       tilts++;
+      seconds = 0;
       blink(3, true);
     }
   }
+
+
+  // Buzzings...
 
   // If we haven't moved, check if it's time to buzz!
   if (coffee && movements < 1 && seconds % timerMovement == 0) {
@@ -308,15 +372,12 @@ void loop() {
     buzz();
   }
 
-  seconds++;
 
-  // If we tilted enough, reset and wait
-  if (tilts >= tiltsAmount) {
+  // Are we done?
+  checkFulfilment();
 
-    onBreak = true;
-    reset();
-  }
-  
+
+  // Every seconds...
+  seconds++;  
   delay(1000);
 }
-
