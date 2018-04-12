@@ -311,7 +311,6 @@ void loop() {
   // Are we on break? Should we go back to work?
   checkBreak();
 
-
   // Temperature Check
   bool isHot = isItHot();
   // Movement Check
@@ -319,14 +318,13 @@ void loop() {
   // Inclination Check
   bool isTilting = isItTilting();
 
-
   // If something's hot, we blink RED once, we record we got coffee in.
   if (!onBreak && isHot) {
 
     if (!coffee) {
 
       coffee = true;
-      seconds = 0;
+      seconds = 1;
       blink(1);
     }
   }
@@ -336,7 +334,7 @@ void loop() {
 
     movements++;
     moved = true;
-    seconds = 0;
+    seconds = 1;
     blink(2, true);
   }
 
@@ -350,32 +348,29 @@ void loop() {
 
       tilting = true;
       tilts++;
-      seconds = 0;
+      seconds = 1;
       blink(3, true);
     }
   }
 
-
   // Buzzings...
 
   // If we haven't moved, check if it's time to buzz!
-  if (coffee && movements < 1 && seconds % timerMovement == 0) {
+  if (coffee && !moved && movements < 1 && seconds % timerMovement == 0) {
 
-    seconds = 0;
+    seconds = 1;
     buzz();
   }
 
   // If we're under tilt amount theshold, check if it's time to buzz!
-  if (coffee && tilts <= tiltsAmount && seconds % timerTilting == 0) {
+  if (coffee && moved && tilts <= tiltsAmount && seconds % timerTilting == 0) {
 
-    seconds = 0;
+    seconds = 1;
     buzz();
   }
 
-
   // Are we done?
   checkFulfilment();
-
 
   // Every seconds...
   seconds++;  
