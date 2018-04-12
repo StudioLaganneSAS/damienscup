@@ -6,7 +6,7 @@ My brother always forgets its coffee. Either directly on the coffee machine afte
 
 I decided I would make him a small arduino device below the cup that would detect those slacking behavior!
 
-*Note: This is my **first ever** Arduino's Project :)*
+*Note: This is my **first ever** Electronics or Arduino's Project :)*
 
 ## Components
 - [Arduino Uno Rev3](https://store.arduino.cc/arduino-uno-rev3)
