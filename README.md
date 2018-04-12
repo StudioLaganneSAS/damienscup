@@ -2,7 +2,7 @@
 Arduino Smart Coffee Cup for Damien <[@roy204](http://github.com/roy204)> Chavarria, made by John <[@psish](http://github.com/psish)> Chavarria.
 
 ## History
-My brother always forgets its coffee. Either directly on the coffee machine after launching it, or right in front of him while working. As a result, he's always drinking his cup cold, and he hates it.
+My brother always forgets its coffee. Either directly on the coffee machine after pouring it, or right in front of him while working. As a result, he's always drinking his cup cold, and he hates it.
 
 I decided I would make him a small arduino device below the cup that would detect those slacking behavior!
 
@@ -39,6 +39,6 @@ The device is placed right below the coffee cup.
 ![Damien's Coffee Cup PCB Top Layer](http://drive.psi.sh/StudioLaganne/damienscup/pcb_top.png)
 ![Damien's Coffee Cup PCB Bottom Layer](http://drive.psi.sh/StudioLaganne/damienscup/pcb_bottom.png)
 
-I replaced the Arduino UNO by a custom-made PCB that just adds the parts for a standalone Arduino ATMEGA328, it just connects the pins for the RGB LED, the passive buzzer and series the SCL and SDA for both I2C sensors.
+I replaced the Arduino UNO by a custom-made PCB that just adds the parts for a [standalone Arduino ATMEGA328](https://www.arduino.cc/en/Main/Standalone), it just connects the pins for the RGB LED, the passive buzzer and series the SCL and SDA for both I2C sensors.
 
 The project is powered by a [Lithium Ion Polymer Battery - 3.7v 500mAh](https://www.adafruit.com/product/1578) and charged through a [QI Wireless Receiver](https://www.adafruit.com/product/1901) via [Adafruit's Mini Lipo charger](https://www.adafruit.com/product/1905).
