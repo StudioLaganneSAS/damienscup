@@ -2,7 +2,7 @@
 Arduino Smart Coffee Cup for Damien <[@roy204](http://github.com/roy204)> Chavarria, made by John <[@psish](http://github.com/psish)> Chavarria.
 
 ## History
-My brother always forgets its coffee. Either directly on the coffee machine after launching it, or right in front of him while working. As a result, he's always drinking his cup cold, and he hates it.
+My brother always forgets its coffee. Either directly on the coffee machine after pouring it, or right in front of him while working. As a result, he's always drinking his cup cold, and he hates it.
 
 I decided I would make him a small arduino device below the cup that would detect those slacking behavior!
 
