@@ -292,9 +292,6 @@ void setup() {
   mma.begin();
   mma.setRange(MMA8451_RANGE_2_G);
   initMMA();
-
-  // We're fucking ready
-  buzz(true);
 }
 
 
